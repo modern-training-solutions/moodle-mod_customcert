@@ -243,3 +243,7 @@ $string['verifycertificateanyone_help'] = 'This setting enables anyone with the 
 $string['verifycertificatedesc'] = 'This link will take you to a new screen where you will be able to verify certificates on the site';
 $string['width'] = 'Width';
 $string['width_help'] = 'This is the width of the certificate PDF in mm. For reference an A4 piece of paper is 210mm wide and a letter is 216mm wide.';
+$string['codegenerationmethod'] = 'Code generation method';
+$string['codegenerationmethod_desc'] = 'Choose between the old or new method for generating certificate codes.';
+$string['oldmethod'] = '6aOdbLEuoC (Random string)';
+$string['newmethod'] = '0123-4567-8901 (12-digit numeric code)';
