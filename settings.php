@@ -81,15 +81,14 @@ $settings->add(new admin_setting_configduration('customcert/certificateexecution
 $settings->add(new admin_setting_heading('defaults',
     get_string('modeditdefaults', 'admin'), get_string('condifmodeditdefaults', 'admin')));
 
-// Add the new code generation setting after the defaults section or before the protection settings
 $settings->add(new admin_setting_configselect(
     'customcert/codegenerationmethod',
     get_string('codegenerationmethod', 'customcert'),
     get_string('codegenerationmethod_desc', 'customcert'),
-    0, // Default option (0 = Old method)
+    0, // Default option (0 = Upper/lower/digits random string method)
     [
-        0 => get_string('oldmethod', 'customcert'), // Old method (simple random string)
-        1 => get_string('newmethod', 'customcert')  // New method (12-digit numeric code)
+        0 => get_string('Upper/lower/digits', 'customcert'), // Upper/lower/digits random string
+        1 => get_string('digits-with-hyphens', 'customcert')  // Digits with hyphens numeric code
     ]
 ));
 

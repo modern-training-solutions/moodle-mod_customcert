@@ -544,17 +544,17 @@ class certificate {
         // Get the user's selected method from settings
         $method = get_config('customcert', 'codegenerationmethod');
     
-        // If the old method is selected (0), use the old code generation method
+        // If the upper/lower/digits is selected (0), use the upper/lower/digits code generation method
         if ($method == 0) {
-            return self::generate_code_old();
+            return self::generate_code_upper_lower_digits();
         }
     
-        // Otherwise, use the new method (1)
-        return self::generate_code_new();
+        // Otherwise, use the digits with hyphens method (1)
+        return self::generate_code_digits_with_hyphens();
     }
     
-    // Old method (simple random string)
-    private static function generate_code_old() {
+    // Upper/lower/digits random string
+    private static function generate_code_upper_lower_digits() {
         global $DB;
     
         $uniquecodefound = false;
@@ -570,8 +570,8 @@ class certificate {
         return $code;
     }
     
-    // New method (12-digit numeric code with formatting)
-    private static function generate_code_new() {
+    // Digits with hyphens
+    private static function generate_code_digits_with_hyphens() {
         global $DB;
     
         // Define the character set (digits only).
@@ -580,7 +580,7 @@ class certificate {
         $length = 12; // Total length excluding hyphens
     
         do {
-            // Generate a raw 12-digit code
+            // Generate a raw code
             $rawcode = '';
             for ($i = 0; $i < $length; $i++) {
                 $rawcode .= $characters[random_int(0, $charCount - 1)]; // Secure random number selection
