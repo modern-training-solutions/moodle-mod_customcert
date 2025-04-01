@@ -1,63 +1,88 @@
 <?php
-require_once('../../config.php');
+// Include required Moodle configuration and custom certificate library.
+require_once(__DIR__ . '/../../config.php');
+require_once($CFG->dirroot . '/mod/customcert/lib.php');
 
-// Get the token parameter
-$token = required_param('token', PARAM_ALPHANUMEXT);
+// Set up the page context before processing any parameters.
+// This ensures that Moodle properly initializes the page and handles any errors gracefully.
+$context = context_system::instance();
+$PAGE->set_context($context);
+$PAGE->set_url('/mod/customcert/view_user_cert.php');
+$PAGE->set_title('View certificate');
+$PAGE->set_heading('View certificate');
 
-require_login();
+/**
+ * Displays an error message in a formatted Moodle page and exits.
+ *
+ * This function helps standardize error handling by rendering the page
+ * properly and showing the error message in an alert box.
+ *
+ * @param string $message The error message to display.
+ */
+function display_error_page($message) {
+    global $OUTPUT;
 
-// Start output buffering to catch any unintended output
-ob_start();
-
-// Check if token exists in session and is valid
-if (!isset($SESSION->cert_tokens[$token])) {
-    ob_end_clean(); // Clean the buffer before throwing exception
-    throw new moodle_exception('Invalid or expired token.');
+    echo $OUTPUT->header(); // Display the page header.
+    echo $OUTPUT->box($message, 'alert alert-danger'); // Display the error message in a styled box.
+    echo $OUTPUT->footer(); // Display the page footer.
+    exit; // Stop further execution.
 }
 
-$token_data = $SESSION->cert_tokens[$token];
-$expiration_time = 300; // 5 minutes in seconds
+// Retrieve certificate code and verification token from URL parameters.
+// 'optional_param' is used instead of 'required_param' to avoid Moodle throwing an automatic error page.
+$cert_code = optional_param('cert_code', '', PARAM_ALPHANUMEXT);
+$token = optional_param('token', '', PARAM_ALPHANUMEXT);
 
-// Check if token has expired
-if ((time() - $token_data['timestamp']) > $expiration_time) {
-    unset($SESSION->cert_tokens[$token]); // Clean up expired token
-    ob_end_clean();
-    throw new moodle_exception('Token has expired. Please try again.');
+// Ensure both required parameters are provided.
+if (empty($cert_code) || empty($token)) {
+    display_error_page('Certificate code or verification token is missing. Please check the URL and try again.');
 }
 
-// Find the issued certificate based on the eCard code from token data
-$issue = $DB->get_record('customcert_issues', ['code' => $token_data['ecardcode']], '*');
+// Validate the provided token by regenerating it using the expected algorithm.
+$expected_token = calculate_signature($cert_code);
+if ($token !== $expected_token) {
+    display_error_page('The verification token is invalid for this certificate. Please check the URL and try again.');
+}
+
+// Retrieve the certificate issue entry using the provided certificate code.
+// This helps fetch the associated user ID to verify ownership.
+$issue = $DB->get_record('customcert_issues', ['code' => $cert_code], '*');
 
 if (!$issue) {
-    unset($SESSION->cert_tokens[$token]); // Clean up invalid token
-    ob_end_clean();
-    throw new moodle_exception('Certificate not found.');
+    display_error_page('The certificate with the provided code could not be found. Please verify the certificate code and try again.');
 }
 
-// Fetch the certificate linked to this issue
+// Fetch the certificate associated with the retrieved issue.
+// The certificate must be one of the recognized eCard types: 'Cognitive eCard' or 'Completion eCard'.
 $certificate = $DB->get_record_sql("
     SELECT * FROM {customcert}
     WHERE id = ? AND name IN ('Cognitive eCard', 'Completion eCard')
 ", [$issue->customcertid]);
 
 if (!$certificate) {
-    ob_end_clean();
-    throw new moodle_exception('No valid Cognitive eCard or Completion eCard found.');
+    display_error_page('The certificate type is not valid or does not exist. Please contact the site administrator for assistance.');
 }
 
-// Clean up the token after successful validation
-unset($SESSION->cert_tokens[$token]);
+// Retrieve the corresponding template for the fetched certificate.
+// The template defines the layout and content of the generated certificate.
+$template = $DB->get_record('customcert_templates', ['id' => $certificate->templateid]);
+if (!$template) {
+    display_error_page('The certificate template could not be found. Please contact the site administrator for assistance.');
+}
 
-// Get the template
-$template = $DB->get_record('customcert_templates', ['id' => $certificate->templateid], '*', MUST_EXIST);
-$template = new \mod_customcert\template($template);
+try {
+    // Convert the template record into a template object.
+    // This object provides methods to generate and render the certificate.
+    $template = new \mod_customcert\template($template);
 
-// Close session
-\core\session\manager::write_close();
+    // Generate and output the certificate PDF.
+    // 'false' indicates that the PDF is displayed inline instead of being force-downloaded.
+    // The second parameter ensures the certificate is generated for the correct user.
+    $template->generate_pdf(false, $issue->userid);
+} catch (Exception $e) {
+    // Catch any errors that may occur while generating the certificate PDF.
+    display_error_page('There was an error generating the certificate PDF. Please try again later or contact support if the problem persists.');
+}
 
-// Clean the output buffer before PDF generation
-ob_end_clean();
-
-// Generate and output the PDF
-$template->generate_pdf(false, $issue->userid);
-exit();
+// Prevent further execution after rendering the certificate.
+exit;
