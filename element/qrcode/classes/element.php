@@ -172,7 +172,7 @@ class element extends \mod_customcert\element {
                 $urlparams['contextid'] = $issue->contextid;
             }
 
-            $qrcodeurl = new \moodle_url('/verify', $urlparams);
+            $qrcodeurl = new \moodle_url('https://app.pacificmedicaltraining.com/verify', $urlparams);
             $qrcodeurl = $qrcodeurl->out(false);
         }
 
