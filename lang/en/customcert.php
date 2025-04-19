@@ -247,3 +247,5 @@ $string['codegenerationmethod'] = 'Code generation method';
 $string['codegenerationmethod_desc'] = 'Choose between the two methods for generating certificate codes.';
 $string['Upper/lower/digits'] = '6aOdbLEuoC (Upper/lower/digits random string)';
 $string['digits-with-hyphens'] = '0123-4567-8901 (Digits with hyphens)';
+$string['eventcertificateupdated'] = 'Certificate updated';
+$string['eventcertificatedeleted'] = 'Certificate deleted';
