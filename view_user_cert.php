@@ -53,10 +53,11 @@ if (!$issue) {
 }
 
 // Fetch the certificate associated with the retrieved issue.
-// The certificate must be one of the recognized eCard types: 'Cognitive eCard' or 'Completion eCard'.
+// Allow variations like "Cognitive eCard (English)" or "Completion eCard (Spanish)".
 $certificate = $DB->get_record_sql("
     SELECT * FROM {customcert}
-    WHERE id = ? AND name IN ('Cognitive eCard', 'Completion eCard')
+    WHERE id = ?
+      AND (name LIKE 'Cognitive eCard%' OR name LIKE 'Completion eCard%')
 ", [$issue->customcertid]);
 
 if (!$certificate) {
